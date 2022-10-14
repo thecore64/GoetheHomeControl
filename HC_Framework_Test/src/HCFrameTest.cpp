@@ -29,7 +29,7 @@ void defineDevice(){
   myDevice.subscribeMessages[1] = myDevice.type+"/Switch2";
   myDevice.subscribeMessages[2] = myDevice.type+"/Brightness1";
   myDevice.subscribeMessages[3] = myDevice.type+"/Brightness2";
-  // define the device "state" messages to publish -----------------
+  // define the device "state" messages to be published -----------------
   myDevice.publishMessages[0] = myDevice.type+"/stateSwitch1";
   myDevice.publishMessages[0] = myDevice.type+"/stateSwitch2";
   myDevice.publishMessages[0] = myDevice.type+"/stateBrightness1";
