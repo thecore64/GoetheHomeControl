@@ -6,7 +6,7 @@ FRAMEWORK FOR DEFINING HOME CONTROL DEVICES
 Device IP addresses
 -------------------
 For each device a fixed IP address in the network should be used.
-Just a randomly choosen convention could be:
+Just a randomly choosen numbering could be:
 
 SWI devices start with xxx.xxx.0.10
 
