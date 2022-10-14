@@ -3,7 +3,7 @@
 // (c) C.Bjoernsen, 2022
 // Switch with ESP-01 WiFi module and serial control
 // chinese board with 8 pin STC 16F104 MCU
-// (c) C.Bjoernsen, 2022
+// (c) C.Bjoernsen, September 2022
 
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
