@@ -1,0 +1,21 @@
+{
+	"folders": [
+		{
+			"path": "ESP01SerialSwitch"
+		},
+		{
+			"path": "ESP32_Dual_Dimmer"
+		},
+		{
+			"path": "WoodTouch"
+		},
+		{
+			"path": "comments"
+		},
+		{
+			"name": "HC_Framework_Test",
+			"path": "../Projects/HC_Framework_Test"
+		}
+	],
+	"settings": {}
+}

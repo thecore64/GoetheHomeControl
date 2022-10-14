@@ -1,0 +1,58 @@
+FRAMEWORK FOR DEFINING HOME CONTROL DEVICES
+===========================================
+
+Device IP addresses
+-------------------
+For each device a fixed IP address in the network should be used.
+Just a randomly choosen convention could be:
+
+SWI devices start with xxx.xxx.0.10
+
+DIM devices start with xxx.xxx.0.20
+
+CMD devices start with xxx.xxx.0.30
+
+This makes it easier, together with device naming, to use Over the Air Update.
+Make sure to never (!) program two modules with the same IP !!
+This will end up with a mess in your network and your devices !!
+
+Device naming
+-------------
+Devices use clear text names and consist of two parts.
+The first part is a 3 capital letter code, which identifies the type of the device.
+SWI = switch device, basically simple on/off switches
+DIM = dimmer device, to control Brightness
+CMD = command device, with a certain number of buttons or touch button to control other 
+      SWI or DIM devices
+SNS = sensor device, which is usually only publishing values, like temperature or humidity or both
+
+The second part is a freely definable name, like "LivingRoom" or "BedRoom". For practical reasons, 
+this name should give information about the location of the device.
+
+The complete name of a device will look like this:
+SWIBedRoom, CMDLivingRoom, CMDHAllway or SNSOutside
+Of course there can be combined devices, e.g. a dimmer can also be a switch (a switch in a dimmer 
+can be a "logical" switch, which just switches the brightness with one "switch" message to 100%)
+The name would be a combination too, like "DIMSWI__________". 
+Another example would be a switch containing a temperature sensor, its name would be "SWISNS........".
+
+
+State variables
+---------------
+When you control devices from different places, each command device needs to know the state 
+of the controlled device at any time.
+
+For that we use a special variable, which will be sent over MQTT. This variable needs to be received
+(subscribed) by every device which needs to know it, e.g. for displaying the state on a display or
+for another command device which is controlling the same switch or dimmer.
+
+Variable has always the prefix "state". For example if a switch is controlled by the MQTT 
+message "Switch1", then the controlled device, the switch has to publich a variable which is called
+"stateSwitch1". In case of a switch, the value can only be 0 or 1.
+For e.g. the brightness for a dimmer, this could be the MQTT message "Brightness1" to control the
+brightness of an LED. The device has to publish a variable called "stateBrightness1", here it can
+a value between maximum and minimum brightness, e.g. 0 - 1024 for a 10 bit PWM.
+
+
+
+Q: can a all state variables be received by subscribing to "state*" ??
