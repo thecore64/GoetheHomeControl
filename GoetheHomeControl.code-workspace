@@ -13,8 +13,7 @@
 			"path": "comments"
 		},
 		{
-			"name": "HC_Framework_Test",
-			"path": "../Projects/HC_Framework_Test"
+			"path": "HC_Framework_Test"
 		}
 	],
 	"settings": {}
