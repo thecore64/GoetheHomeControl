@@ -91,17 +91,39 @@ void setupWiFi() {
 void HC_callback(char* topic, byte* payload, unsigned int length) {
   String retStr;
 
-  for (unsigned int i=0;i<6;i++) c_val[i]=0; 
+  for (unsigned int i=0;i<6;i++) c_val[i]=0; // clear buffer
+
   retStr = checkSubscribeMessage(myDevice,0,topic,length, payload);
   if (retStr != "NAM"){ // it is a valid message content
     // value conversion takes place here
+   myDevice.stateVar[0] = retStr.toInt();
+   publishStateMessage(myDevice,0);
   }
   Serial.print("Callback return String 1: "); Serial.println(retStr);
+
   retStr = checkSubscribeMessage(myDevice,1,topic,length, payload);
   if (retStr != "NAM"){ // it is a valid message content
     // value conversion takes place here
+    myDevice.stateVar[1] = retStr.toInt();
+    publishStateMessage(myDevice,1);
   }  
   Serial.print("Callback return String 2: "); Serial.println(retStr);
+
+  retStr = checkSubscribeMessage(myDevice,2,topic,length, payload);
+  if (retStr != "NAM"){ // it is a valid message content
+    // value conversion takes place here
+    myDevice.valueVar[0] = retStr.toFloat();
+    publishValueMessage(myDevice,0);
+  }  
+  Serial.print("Callback return String 3: "); Serial.println(retStr);
+
+  retStr = checkSubscribeMessage(myDevice,3,topic,length, payload);
+  if (retStr != "NAM"){ // it is a valid message content
+    // value conversion takes place here
+    myDevice.valueVar[1] = retStr.toFloat();
+    publishValueMessage(myDevice,1);
+  }  
+  Serial.print("Callback return String 4: "); Serial.println(retStr);
 }  
 
 void setup() {
@@ -132,7 +154,7 @@ void loop() {
   if (currentMillis - previousMillis >= interval) {
     previousMillis = currentMillis;
   
-    HC_publishStatus(myDevice);
+    //HC_publishStatus(myDevice);
   }
 
 }
