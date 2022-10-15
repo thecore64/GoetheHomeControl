@@ -24,9 +24,9 @@ typedef struct {
   String    type; //device type
   String    freeName;
   int       numSwitchChannels;
+  int       numPWMChannels;
   int       stateVar[10]; // variable array for switch states
   float     valueVar[10]; // variable array for values, like brightness
-  int       numPWMChannels;
   int       numButtons;
   int       numSubscribeMessages;
   unsigned int  publishInterval;
@@ -61,12 +61,15 @@ void publishStateMessage(iotdevice iot, PubSubClient pclient, int index){
 
 void publishValueMessage(iotdevice iot, PubSubClient pclient, int index){
       publishStr = iot.publishValueMessages[index];
-      snprintf (msg, MSG_BUFFER_SIZE, "%d", iot.valueVar[index]); // copy payload value into msg buffer
+      snprintf (msg, MSG_BUFFER_SIZE, "%f", iot.valueVar[index]); // copy payload value into msg buffer
       publishStr.toCharArray(publish_buffer,publishStr.length()+1);
       publishStr = iot.publishValueMessages[index];
       pclient.publish(publish_buffer,msg);
 }
 
+void publishIntialState(iotdevice iot, PubSubClient pclient){
+
+}
 
 void HC_publishStatus(iotdevice iot, PubSubClient pclient){
    publishStateMessage(iot, pclient, 0);

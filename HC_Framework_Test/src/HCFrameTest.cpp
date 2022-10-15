@@ -26,18 +26,48 @@ void defineDevice(){
   // define switch and dim channels --------------------------------
   myDevice.numSwitchChannels = 2;
   myDevice.numPWMChannels = 2;
-  // define the messages the device is subscibing to control it ----
+  // define the messages the device is subscribing to to control it ----
   myDevice.numSubscribeMessages = 4;
   myDevice.subscribeMessages[0] = myDevice.type+myDevice.freeName+"/Switch1";
   myDevice.subscribeMessages[1] = myDevice.type+myDevice.freeName+"/Switch2";
   myDevice.subscribeMessages[2] = myDevice.type+myDevice.freeName+"/Brightness1";
   myDevice.subscribeMessages[3] = myDevice.type+myDevice.freeName+"/Brightness2";
-  // define the device "state" messages to be published -----------------
+  // define the device "state" and value messages to be published -----------------
   myDevice.publishStatusMessages[0] = myDevice.type+myDevice.freeName+"/stateSwitch1";
   myDevice.publishStatusMessages[1] = myDevice.type+myDevice.freeName+"/stateSwitch2";
   myDevice.publishValueMessages[0] = myDevice.type+myDevice.freeName+"/stateBrightness1";
   myDevice.publishValueMessages[1] = myDevice.type+myDevice.freeName+"/stateBrightness2";
 }
+
+void reconnect() {
+  int mqtt_reconnectcnt = 0;
+
+  // Loop until we're reconnected
+  while (!client.connected()) {
+    // Create a random client ID
+    String clientId = myDevice.type + myDevice.freeName;
+    clientId += String(random(0xffff), HEX);
+    // Attempt to connect
+    if (client.connect(clientId.c_str())) {
+      HC_subscribeAll(myDevice, client);
+    } else {  
+      delay(2000); // Wait 2 seconds before retrying
+      mqtt_reconnectcnt ++;
+      #ifdef DEBUG
+        Serial.print("Recon cnt: "); Serial.println(mqtt_reconnectcnt);
+      #endif
+      if (mqtt_reconnectcnt > 10){     
+       ESP.restart();
+      }
+    }
+  }
+  #ifdef DEBUG
+    Serial.println("MQTT connection established !");
+  #endif
+  delay(100);
+  HC_publishStatus(myDevice, client);
+}
+
 
 void setupWiFi() {
   // connecting to a WiFi network
@@ -59,7 +89,10 @@ void setupWiFi() {
 void setup() {
   setupWiFi();
 
-  HC_subscribeAll(myDevice, client);
+  client.setServer(mqtt_server, 1883);
+  //client.setCallback(callback);
+
+  HC_subscribeAll(myDevice, client); // subscribe to all ness. control messages
 
 }
 
