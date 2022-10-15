@@ -9,6 +9,9 @@ String publishStr;
 String subscribeStr;
 String compareStr;
 
+WiFiClient espClient;
+PubSubClient client(espClient);
+
 char c_val[6];    // buffer for dealing with MQTT messages payload
 #define MSG_BUFFER_SIZE  (60)  
 char msg[MSG_BUFFER_SIZE];  // general MQTT message buffer
@@ -35,43 +38,50 @@ typedef struct {
   int       btnPressCnt[6];
   String    btnMessages[4][6];     // messages to be sent on btn. activation 
   String    publishStatusMessages[10];   // device status messages to send
+  int       numStatusMessages;
   String    publishValueMessages[10];   // device messages to send, for float values
+  int       numValueMessages;
   String    subscribeMessages[10]; // messages the device needs to receive
   IPAddress deviceIP;
 } iotdevice;
 
-void HC_subscribeAll(iotdevice iot, PubSubClient pclient){
+void HC_subscribeAll(iotdevice iot){
   for (int i = 0; i < iot.numSubscribeMessages; i++){
     #ifdef DEBUG
       Serial.print("Subscribe to: "); Serial.println(iot.subscribeMessages[i]);
     #endif
       subscribeStr = iot.subscribeMessages[i];
       subscribeStr.toCharArray(subscribe_buffer,subscribeStr.length()+1);
-      pclient.subscribe(subscribe_buffer);
+      client.subscribe(subscribe_buffer);
   }
 }
 
-void publishStateMessage(iotdevice iot, PubSubClient pclient, int index){
+void publishStateMessage(iotdevice iot, int index){
       publishStr = iot.publishStatusMessages[index];
-      snprintf (msg, MSG_BUFFER_SIZE, "%d", iot.stateVar[index]); // copy payload value into msg buffer
+      snprintf (msg, MSG_BUFFER_SIZE, "%d", iot.stateVar[index]); // copy payload value into msg buffe 
       publishStr.toCharArray(publish_buffer,publishStr.length()+1);
-      pclient.publish(publish_buffer,msg);
+      client.publish(publish_buffer,msg);
 }
 
-void publishValueMessage(iotdevice iot, PubSubClient pclient, int index){
+void publishValueMessage(iotdevice iot, int index){
       publishStr = iot.publishValueMessages[index];
       snprintf (msg, MSG_BUFFER_SIZE, "%f", iot.valueVar[index]); // copy payload value into msg buffer
       publishStr.toCharArray(publish_buffer,publishStr.length()+1);
-      pclient.publish(publish_buffer,msg);
+      client.publish(publish_buffer,msg);
 }
 
-void publishIntialState(iotdevice iot, PubSubClient pclient){
+void publishInitialState(iotdevice iot, PubSubClient pclient){
 
 }
 
-void HC_publishStatus(iotdevice iot, PubSubClient pclient){
-   publishStateMessage(iot, pclient, 0);
-   publishStateMessage(iot, pclient, 1);
+void HC_publishStatus(iotdevice iot){
+  int i;
+  for (i = 0; i < iot.numStatusMessages-1; i++){
+    publishStateMessage(iot, i);
+  }
+  for (i = 0; i < iot.numValueMessages-1; i++){
+    publishValueMessage(iot, i);
+  }
 }
 
 #endif

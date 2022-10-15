@@ -16,8 +16,7 @@ const char* ssid = "TheCore";
 const char* password = "M1n0tauru5";
 const char* mqtt_server = "192.168.0.5";
 
-WiFiClient espClient;
-PubSubClient client(espClient);
+
 
 void defineDevice(){
   // define device type and name -----------------------------------
@@ -35,8 +34,10 @@ void defineDevice(){
   // define the device "state" and value messages to be published -----------------
   myDevice.publishStatusMessages[0] = myDevice.type+myDevice.freeName+"/stateSwitch1";
   myDevice.publishStatusMessages[1] = myDevice.type+myDevice.freeName+"/stateSwitch2";
+  myDevice.numStatusMessages = 2;
   myDevice.publishValueMessages[0] = myDevice.type+myDevice.freeName+"/stateBrightness1";
   myDevice.publishValueMessages[1] = myDevice.type+myDevice.freeName+"/stateBrightness2";
+  myDevice.numValueMessages = 2;
 }
 
 void reconnect() {
@@ -49,7 +50,7 @@ void reconnect() {
     clientId += String(random(0xffff), HEX);
     // Attempt to connect
     if (client.connect(clientId.c_str())) {
-      HC_subscribeAll(myDevice, client);
+      HC_subscribeAll(myDevice);
       #ifdef DEBUG
         Serial.println("Subsribed to all device messages!");
       #endif
@@ -102,7 +103,7 @@ void setup() {
 }
 
 unsigned long previousMillis = 0;
-const long interval = 1000;  
+const long interval = 2000;  
 
 void loop() {
   if (!client.connected()) {
@@ -110,21 +111,12 @@ void loop() {
   }
   client.loop();
 
-  Serial.print("Dev type:" ); Serial.println(myDevice.type);
-  Serial.print("Dev name:" ); Serial.println(myDevice.freeName);
-
-  Serial.println("Client connceted, in loop");
-
   unsigned long currentMillis = millis();
 
   if (currentMillis - previousMillis >= interval) {
     previousMillis = currentMillis;
-
-    publishStr = myDevice.publishStatusMessages[0];
-    Serial.print("send status msg. : "); Serial.println(myDevice.publishStatusMessages[0]);
-    snprintf (msg, MSG_BUFFER_SIZE, "%d", myDevice.stateVar[0]); // copy payload value into msg buffer
-    publishStr.toCharArray(publish_buffer,publishStr.length()+1);
-    client.publish(publish_buffer,msg);
-  }
   
+    HC_publishStatus(myDevice);
+  }
+
 }
