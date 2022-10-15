@@ -45,6 +45,19 @@ typedef struct {
   IPAddress deviceIP;
 } iotdevice;
 
+String checkSubscribeMessage(iotdevice iot,int index, char* topic, unsigned int len, byte* payl){
+  iot.subscribeMessages[index].toCharArray(compare_buffer,iot.subscribeMessages[index].length()+1);  
+  
+  if (strcmp(topic, compare_buffer) == 0){
+      for (unsigned int i=0;i < len;i++){
+        c_val[i]=(char)(payl[i]);   
+      }
+
+      return (String(c_val));
+  }
+  return("NAM"); // not a valid message
+}
+
 void HC_subscribeAll(iotdevice iot){
   for (int i = 0; i < iot.numSubscribeMessages; i++){
     #ifdef DEBUG

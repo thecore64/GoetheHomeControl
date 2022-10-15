@@ -88,6 +88,22 @@ void setupWiFi() {
   #endif  
 }
 
+void HC_callback(char* topic, byte* payload, unsigned int length) {
+  String retStr;
+
+  for (unsigned int i=0;i<6;i++) c_val[i]=0; 
+  retStr = checkSubscribeMessage(myDevice,0,topic,length, payload);
+  if (retStr != "NAM"){ // it is a valid message content
+    // value conversion takes place here
+  }
+  Serial.print("Callback return String 1: "); Serial.println(retStr);
+  retStr = checkSubscribeMessage(myDevice,1,topic,length, payload);
+  if (retStr != "NAM"){ // it is a valid message content
+    // value conversion takes place here
+  }  
+  Serial.print("Callback return String 2: "); Serial.println(retStr);
+}  
+
 void setup() {
   #ifdef DEBUG
     Serial.begin(9600);
@@ -98,7 +114,7 @@ void setup() {
   setupWiFi();
 
   client.setServer(mqtt_server, 1883);
-  //client.setCallback(callback);
+  client.setCallback(HC_callback);
 
 }
 
