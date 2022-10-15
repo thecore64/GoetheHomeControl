@@ -50,6 +50,9 @@ void reconnect() {
     // Attempt to connect
     if (client.connect(clientId.c_str())) {
       HC_subscribeAll(myDevice, client);
+      #ifdef DEBUG
+        Serial.println("Subsribed to all device messages!");
+      #endif
     } else {  
       delay(2000); // Wait 2 seconds before retrying
       mqtt_reconnectcnt ++;
@@ -65,9 +68,7 @@ void reconnect() {
     Serial.println("MQTT connection established !");
   #endif
   delay(100);
-  HC_publishStatus(myDevice, client);
 }
-
 
 void setupWiFi() {
   // connecting to a WiFi network
@@ -82,20 +83,48 @@ void setupWiFi() {
   retIP = WiFi.localIP();
 
   #ifdef DEBUG
-    Serial.print("\n\rconnected to:"); Serial.print(ssid); Serial.print("IP: "); Serial.println(retIP);
+    Serial.print("\n\rconnected to: "); Serial.print(ssid); Serial.print(" IP: "); Serial.println(retIP);
   #endif  
 }
 
 void setup() {
+  #ifdef DEBUG
+    Serial.begin(9600);
+  #endif  
+
+  defineDevice();
+
   setupWiFi();
 
   client.setServer(mqtt_server, 1883);
   //client.setCallback(callback);
 
-  HC_subscribeAll(myDevice, client); // subscribe to all ness. control messages
-
 }
 
+unsigned long previousMillis = 0;
+const long interval = 1000;  
+
 void loop() {
-  // put your main code here, to run repeatedly:
+  if (!client.connected()) {
+    reconnect();
+  }
+  client.loop();
+
+  Serial.print("Dev type:" ); Serial.println(myDevice.type);
+  Serial.print("Dev name:" ); Serial.println(myDevice.freeName);
+
+  Serial.println("Client connceted, in loop");
+
+  unsigned long currentMillis = millis();
+
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis = currentMillis;
+
+    publishStr = myDevice.publishStatusMessages[0];
+    Serial.print("send status msg. : "); Serial.println(myDevice.publishStatusMessages[0]);
+    snprintf (msg, MSG_BUFFER_SIZE, "%d", myDevice.stateVar[0]); // copy payload value into msg buffer
+    publishStr.toCharArray(publish_buffer,publishStr.length()+1);
+    client.publish(publish_buffer,msg);
+  }
+  
 }
