@@ -23,17 +23,20 @@ void defineDevice(){
   // define device type and name -----------------------------------
   myDevice.type = "SWIDIM";
   myDevice.freeName = "Aisle";
+  // define switch and dim channels --------------------------------
+  myDevice.numSwitchChannels = 2;
+  myDevice.numPWMChannels = 2;
   // define the messages the device is subscibing to control it ----
   myDevice.numSubscribeMessages = 4;
-  myDevice.subscribeMessages[0] = myDevice.type+"/Switch1";
-  myDevice.subscribeMessages[1] = myDevice.type+"/Switch2";
-  myDevice.subscribeMessages[2] = myDevice.type+"/Brightness1";
-  myDevice.subscribeMessages[3] = myDevice.type+"/Brightness2";
+  myDevice.subscribeMessages[0] = myDevice.type+myDevice.freeName+"/Switch1";
+  myDevice.subscribeMessages[1] = myDevice.type+myDevice.freeName+"/Switch2";
+  myDevice.subscribeMessages[2] = myDevice.type+myDevice.freeName+"/Brightness1";
+  myDevice.subscribeMessages[3] = myDevice.type+myDevice.freeName+"/Brightness2";
   // define the device "state" messages to be published -----------------
-  myDevice.publishMessages[0] = myDevice.type+"/stateSwitch1";
-  myDevice.publishMessages[0] = myDevice.type+"/stateSwitch2";
-  myDevice.publishMessages[0] = myDevice.type+"/stateBrightness1";
-  myDevice.publishMessages[0] = myDevice.type+"/stateBrightness2";
+  myDevice.publishStatusMessages[0] = myDevice.type+myDevice.freeName+"/stateSwitch1";
+  myDevice.publishStatusMessages[1] = myDevice.type+myDevice.freeName+"/stateSwitch2";
+  myDevice.publishValueMessages[0] = myDevice.type+myDevice.freeName+"/stateBrightness1";
+  myDevice.publishValueMessages[1] = myDevice.type+myDevice.freeName+"/stateBrightness2";
 }
 
 void setupWiFi() {

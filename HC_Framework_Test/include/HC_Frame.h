@@ -5,9 +5,9 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 
-String publish_str;
+String publishStr;
 String subscribeStr;
-String compare_str;
+String compareStr;
 
 char c_val[6];    // buffer for dealing with MQTT messages payload
 #define MSG_BUFFER_SIZE  (50)  
@@ -24,6 +24,8 @@ typedef struct {
   String    type; //device type
   String    freeName;
   int       numSwitchChannels;
+  int       stateVar[10]; // variable array for switch states
+  float     valueVar[10]; // variable array for values, like brightness
   int       numPWMChannels;
   int       numButtons;
   int       numSubscribeMessages;
@@ -32,7 +34,8 @@ typedef struct {
   int       btnState[6];
   int       btnPressCnt[6];
   String    btnMessages[4][6];     // messages to be sent on btn. activation 
-  String    publishMessages[10];   // general device messages to send, like RSSI, alive, etc.
+  String    publishStatusMessages[10];   // device status messages to send
+  String    publishValueMessages[10];   // device messages to send, for float values
   String    subscribeMessages[10]; // messages the device needs to receive
   IPAddress deviceIP;
 } iotdevice;
@@ -46,6 +49,28 @@ void HC_subscribeAll(iotdevice iot, PubSubClient pclient){
       subscribeStr.toCharArray(subscribe_buffer,subscribeStr.length()+1);
       pclient.subscribe(subscribe_buffer);
   }
+}
+
+void publishStateMessage(iotdevice iot, PubSubClient pclient, int index){
+      publishStr = iot.publishStatusMessages[index];
+      snprintf (msg, MSG_BUFFER_SIZE, "%d", iot.stateVar[index]); // copy payload value into msg buffer
+      publishStr.toCharArray(publish_buffer,publishStr.length()+1);
+      publishStr = iot.publishStatusMessages[index];
+      pclient.publish(publish_buffer,msg);
+}
+
+void publishValueMessage(iotdevice iot, PubSubClient pclient, int index){
+      publishStr = iot.publishValueMessages[index];
+      snprintf (msg, MSG_BUFFER_SIZE, "%d", iot.valueVar[index]); // copy payload value into msg buffer
+      publishStr.toCharArray(publish_buffer,publishStr.length()+1);
+      publishStr = iot.publishValueMessages[index];
+      pclient.publish(publish_buffer,msg);
+}
+
+
+void HC_publishStatus(iotdevice iot, PubSubClient pclient){
+   publishStateMessage(iot, pclient, 0);
+   publishStateMessage(iot, pclient, 1);
 }
 
 #endif
