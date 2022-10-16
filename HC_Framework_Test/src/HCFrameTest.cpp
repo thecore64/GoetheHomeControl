@@ -17,7 +17,6 @@ const char* password = "M1n0tauru5";
 const char* mqtt_server = "192.168.0.5";
 
 
-
 void defineDevice(){
   // define device type and name -----------------------------------
   myDevice.type = "SWIDIM";
@@ -25,11 +24,11 @@ void defineDevice(){
   // define switch and dim channels --------------------------------
   myDevice.numSwitchChannels = 2;
   myDevice.numPWMChannels = 2;
-  myDevice.GPIO[0] = 1;
-  myDevice.GPIO[1] = 2;
+  myDevice.GPIO[0] = 2;
+  myDevice.GPIO[1] = 5;
   myDevice.numGPIO = 2;
-  myDevice.PWM[0] = 20;
-  myDevice.PWM[1] = 22;
+  myDevice.PWM[0] = 4;
+  myDevice.PWM[1] = 5;
   myDevice.numPWM = 2;
   // define the messages the device is subscribing to to control it ----
   myDevice.numSubscribeMessages = 4;
@@ -99,44 +98,45 @@ void HC_callback(char* topic, byte* payload, unsigned int length) {
 
   for (unsigned int i=0;i<6;i++) c_val[i]=0; // clear buffer
 
-  retStr = HC_checkSubscribeMessage(myDevice,0,topic,length, payload);
+  retStr = HC_checkSubscribeMessage(myDevice, 0, topic, length, payload);
   if (retStr != "NAM"){ // it is a valid message content
     // value conversion takes place here
    myDevice.stateVar[0] = retStr.toInt();
+   HC_setGPIO(myDevice, 0, 1, myDevice.stateVar[0]);
    HC_publishStateMessage(myDevice,0);
   }
-
   #ifdef DEBUG
-    Serial.print("Callback return String 1: "); Serial.println(retStr);
+    Serial.print("Callback return Msg 1: "); Serial.println(retStr);
   #endif
-  retStr = HC_checkSubscribeMessage(myDevice,1,topic,length, payload);
+
+  retStr = HC_checkSubscribeMessage(myDevice, 1, topic, length, payload);
   if (retStr != "NAM"){ // it is a valid message content
     // value conversion takes place here
     myDevice.stateVar[1] = retStr.toInt();
     HC_publishStateMessage(myDevice,1);
   }  
   #ifdef DEBUG
-    Serial.print("Callback return String 2: "); Serial.println(retStr);
+    Serial.print("Callback return Msg 2: "); Serial.println(retStr);
   #endif
 
-  retStr = HC_checkSubscribeMessage(myDevice,2,topic,length, payload);
+  retStr = HC_checkSubscribeMessage(myDevice, 2, topic, length, payload);
   if (retStr != "NAM"){ // it is a valid message content
     // value conversion takes place here
     myDevice.valueVar[0] = retStr.toFloat();
     HC_publishValueMessage(myDevice,0);
   }  
   #ifdef DEBUG
-    Serial.print("Callback return String 3: "); Serial.println(retStr);
+    Serial.print("Callback return Msg 3: "); Serial.println(retStr);
   #endif
 
-  retStr = HC_checkSubscribeMessage(myDevice,3,topic,length, payload);
+  retStr = HC_checkSubscribeMessage(myDevice, 3, topic, length, payload);
   if (retStr != "NAM"){ // it is a valid message content
     // value conversion takes place here
     myDevice.valueVar[1] = retStr.toFloat();
     HC_publishValueMessage(myDevice,1);
   }  
   #ifdef DEBUG
-    Serial.print("Callback return String 4: "); Serial.println(retStr);
+    Serial.print("Callback return Msg 4: "); Serial.println(retStr);
   #endif  
 }  
 
@@ -147,6 +147,8 @@ void setup() {
 
   defineDevice();
 
+  HC_initallGPIOOut(myDevice);
+  
   setupWiFi();
 
   client.setServer(mqtt_server, 1883);

@@ -31,7 +31,10 @@ typedef struct {
   int       GPIO[7];
   int       numGPIO;
   int       PWM[7];
-  int       numPWM;
+  int       PWMHWChannel[7]; // HW timer channel for PWM generation, only valid for ESP32;
+  int       PWMFrequency;    // HW PWM channel frequency, only valid for ESP32
+  int       PWMResolution;   // HW PWM channel resolution, only vaild for ESP32
+  int       numPWM;          // number of PWM controlled IOs
   int       stateVar[10]; // variable array for switch states
   float     valueVar[10]; // variable array for values, like brightness
   int       numButtons;
@@ -51,23 +54,44 @@ typedef struct {
 
 void HC_initallGPIOOut(iotdevice iot){
   int i;
-  for (i = 0; i < iot.numGPIO; i++) pinMode(iot.GPIO[i], OUTPUT);  
+  for (i = 0; i < iot.numGPIO-1; i++) pinMode(iot.GPIO[i], OUTPUT);  
 }
 
 void HC_initallGPIOIn(iotdevice iot){
   int i;
-  for (i=0; i<iot.numGPIO; i++) pinMode(iot.GPIO[i], INPUT);
+  for (i=0; i<iot.numGPIO-1; i++) pinMode(iot.GPIO[i], INPUT);
 }
 
 void HC_initGPIO(iotdevice iot, int index, int mode){
   pinMode(iot.GPIO[index], mode);
 }
 
-void HC_setGPIO(iotdevice iot, int index, int state){
-  digitalWrite(iot.GPIO[index], state);
+void HC_setGPIO(iotdevice iot, int index, int inv, int state){
+  if (inv ==1){
+    digitalWrite(iot.GPIO[index], !state);
+  } else {
+    digitalWrite(iot.GPIO[index], state);
+  }
+}
+
+void HC_initPWMChannel(iotdevice iot){
+  // for ESP8266 no special init for a PWM channel is needed, just define it as output
+  // for ESP32 we need a special init, select hw channel and GPIO pin, frequency and duty
+  #ifdef ESP32 // def from enviroment
+    // setup ESP32 PWM control
+    for (int i = 0; i < iot.numPWM; i ++){
+      ledcAttachPin(iot.PWM[i] , PWMHWChannel[i]); // set HW PWM channel for each pin
+      ledcSetup(iot.PWMHWChannel[i], iot.PWMFrequency, iot.PWMResolution);
+    }
+  #endif
 }
 
 void HC_setPWMChannel(iotdevice iot, int index, int val){
+
+  #ifdef ESP32
+    ledcWrite(iot.PWMChannel[index], iot.valueVar[index]);
+  #endif
+  
   analogWrite(iot.PWM[index], val); //this will work for ESP8266 only !
 }
 
