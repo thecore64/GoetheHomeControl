@@ -14,6 +14,12 @@
 		},
 		{
 			"path": "HC_Framework_Test"
+		},
+		{
+			"path": "WIOTerminal_LVGL"
+		},
+		{
+			"path": "TFT_Slider_LVGL-esp32dev"
 		}
 	],
 	"settings": {}
