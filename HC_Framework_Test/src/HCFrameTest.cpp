@@ -22,12 +22,12 @@ void defineDevice(){
   myDevice.type = "SWIDIM";
   myDevice.freeName = "Aisle";
   // define switch and dim channels --------------------------------
-  myDevice.numSwitchChannels = 2;
-  myDevice.numPWMChannels = 2;
+  //myDevice.numSwitchChannels = 2;
+  //myDevice.numPWMChannels = 2;
   myDevice.GPIO[0] = 2;
   myDevice.GPIO[1] = 5;
   myDevice.numGPIO = 2;
-  myDevice.PWM[0] = 4;
+  myDevice.PWM[0] = 2;
   myDevice.PWM[1] = 5;
   myDevice.numPWM = 2;
   // define the messages the device is subscribing to to control it ----
@@ -43,7 +43,25 @@ void defineDevice(){
   myDevice.publishValueMessages[0] = myDevice.type+myDevice.freeName+"/stateBrightness1";
   myDevice.publishValueMessages[1] = myDevice.type+myDevice.freeName+"/stateBrightness2";
   myDevice.numValueMessages = 2;
+
+myDevice.channels[0].ChannelType = 0;
+myDevice.channels[0].GPIO = 2;
+myDevice.channels[0].PWM = 2;
+myDevice.channels[0].StatusMessage = myDevice.type+myDevice.freeName+"/stateSwitch1";
+myDevice.channels[0].subscribeMessage = myDevice.type+myDevice.freeName+"/Switch1";
 }
+
+// define channel
+typedef struct {
+  String subscribeMessage;
+  String StatusMessage;
+  int ChannelType; // for now: 0 = switch channel on or off, 1 = value channel, to transfer a float value
+  int GPIO;
+  int PWM;
+  int State;
+  int Value;
+} ch;
+
 
 void reconnect() {
   int mqtt_reconnectcnt = 0;
@@ -98,9 +116,19 @@ void HC_callback(char* topic, byte* payload, unsigned int length) {
 
   for (unsigned int i=0;i<6;i++) c_val[i]=0; // clear buffer
 
+  retStr = HC_activateChannelbyMessage(myDevice, 0, SWITCHCH, topic, length, payload);
+  #ifdef DEBUG
+    Serial.print("Switch channel activation by message: "); Serial.println(retStr);
+  #endif 
+
+  retStr = HC_activateChannelbyMessage(myDevice, 2, VALUECH, topic, length, payload);
+  #ifdef DEBUG
+    Serial.print("Value channel activation by message: "); Serial.println(retStr);
+  #endif 
+
+/*
   retStr = HC_checkSubscribeMessage(myDevice, 0, topic, length, payload);
   if (retStr != "NAM"){ // it is a valid message content
-    // value conversion takes place here
    myDevice.stateVar[0] = retStr.toInt();
    HC_setGPIO(myDevice, 0, 1, myDevice.stateVar[0]);
    HC_publishStateMessage(myDevice,0);
@@ -111,7 +139,6 @@ void HC_callback(char* topic, byte* payload, unsigned int length) {
 
   retStr = HC_checkSubscribeMessage(myDevice, 1, topic, length, payload);
   if (retStr != "NAM"){ // it is a valid message content
-    // value conversion takes place here
     myDevice.stateVar[1] = retStr.toInt();
     HC_publishStateMessage(myDevice,1);
   }  
@@ -121,8 +148,8 @@ void HC_callback(char* topic, byte* payload, unsigned int length) {
 
   retStr = HC_checkSubscribeMessage(myDevice, 2, topic, length, payload);
   if (retStr != "NAM"){ // it is a valid message content
-    // value conversion takes place here
     myDevice.valueVar[0] = retStr.toFloat();
+    HC_setPWMChannel(myDevice, 0);
     HC_publishValueMessage(myDevice,0);
   }  
   #ifdef DEBUG
@@ -138,6 +165,7 @@ void HC_callback(char* topic, byte* payload, unsigned int length) {
   #ifdef DEBUG
     Serial.print("Callback return Msg 4: "); Serial.println(retStr);
   #endif  
+  */
 }  
 
 void setup() {

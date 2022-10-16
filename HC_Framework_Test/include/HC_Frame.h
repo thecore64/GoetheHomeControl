@@ -19,15 +19,27 @@ char msg[MSG_BUFFER_SIZE];  // general MQTT message buffer
 char publish_buffer[MSG_BUFFER_SIZE+5];
 char subscribe_buffer[MSG_BUFFER_SIZE+5];
 char compare_buffer[MSG_BUFFER_SIZE+5];
-
 // -----------------------------------------------------------------------------------------
 typedef struct {
+  String subscribeMessage;
+  String StatusMessage;
+  int ChannelType; // for now: 0 = switch channel on or off, 1 = value channel, to transfer a float value
+  int GPIO;
+  int PWM;
+  int StateVar;
+  int ValueVar
+
+} ch;
+// -----------------------------------------------------------------------------------------
+typedef struct {
+  ch channels[4];
+  
   String    chipID;
   String    systemID;
   String    type; //device type
   String    freeName;
-  int       numSwitchChannels;
-  int       numPWMChannels;
+  //int       numSwitchChannels;
+  //int       numPWMChannels;
   int       GPIO[7];
   int       numGPIO;
   int       PWM[7];
@@ -51,6 +63,7 @@ typedef struct {
   String    subscribeMessages[10]; // messages the device needs to receive
   IPAddress deviceIP;
 } iotdevice;
+
 
 void HC_initallGPIOOut(iotdevice iot){
   int i;
@@ -76,23 +89,25 @@ void HC_setGPIO(iotdevice iot, int index, int inv, int state){
 
 void HC_initPWMChannel(iotdevice iot){
   // for ESP8266 no special init for a PWM channel is needed, just define it as output
-  // for ESP32 we need a special init, select hw channel and GPIO pin, frequency and duty
+    for (int i = 0; i < iot.numPWM; i ++) pinMode(iot.PWM[i], OUTPUT);
+
+  // for ESP32 we need a special init, select HW PWM channel and GPIO pin, frequency and duty
   #ifdef ESP32 // def from enviroment
     // setup ESP32 PWM control
     for (int i = 0; i < iot.numPWM; i ++){
-      ledcAttachPin(iot.PWM[i] , PWMHWChannel[i]); // set HW PWM channel for each pin
+      ledcAttachPin(iot.PWM[i] , PWMHWChannel[i]); // set HW PWM channel for each GPIO pin
       ledcSetup(iot.PWMHWChannel[i], iot.PWMFrequency, iot.PWMResolution);
     }
   #endif
 }
 
-void HC_setPWMChannel(iotdevice iot, int index, int val){
+void HC_setPWMChannel(iotdevice iot, int index){
 
   #ifdef ESP32
     ledcWrite(iot.PWMChannel[index], iot.valueVar[index]);
   #endif
   
-  analogWrite(iot.PWM[index], val); //this will work for ESP8266 only !
+  analogWrite(iot.PWM[index], iot.valueVar[index]); //this will work for ESP8266 only !
 }
 
 String HC_checkSubscribeMessage(iotdevice iot,int index, char* topic, unsigned int len, byte* payl){
@@ -108,16 +123,6 @@ String HC_checkSubscribeMessage(iotdevice iot,int index, char* topic, unsigned i
   return("NAM"); // not a valid message
 }
 
-void HC_subscribeAll(iotdevice iot){
-  for (int i = 0; i < iot.numSubscribeMessages; i++){
-    #ifdef DEBUG
-      Serial.print("Subscribe to: "); Serial.println(iot.subscribeMessages[i]);
-    #endif
-      subscribeStr = iot.subscribeMessages[i];
-      subscribeStr.toCharArray(subscribe_buffer,subscribeStr.length()+1);
-      client.subscribe(subscribe_buffer);
-  }
-}
 
 void HC_publishStateMessage(iotdevice iot, int index){
       publishStr = iot.publishStatusMessages[index];
@@ -131,6 +136,47 @@ void HC_publishValueMessage(iotdevice iot, int index){
       snprintf (msg, MSG_BUFFER_SIZE, "%f", iot.valueVar[index]); // copy payload value into msg buffer
       publishStr.toCharArray(publish_buffer,publishStr.length()+1);
       client.publish(publish_buffer,msg);
+}
+
+const int SWITCHCH = 0;
+const int VALUECH = 1;
+
+String HC_activateChannelbyMessage(iotdevice iot,int index, int chType, char* topic, unsigned int len, byte* payl){
+  String retStr;
+
+  iot.subscribeMessages[index].toCharArray(compare_buffer,iot.subscribeMessages[index].length()+1);  
+  if (strcmp(topic, compare_buffer) == 0){
+      for (unsigned int i=0;i < len;i++){
+        c_val[i]=(char)(payl[i]);   
+      }
+      switch (chType){
+        case 0: // switch channel, only 0 and 1, on and off
+            iot.stateVar[index] = atoi(c_val);
+            HC_setGPIO(iot, index, 1, iot.stateVar[index]);
+            HC_publishStateMessage(iot,index);
+        break;
+        case 1: // value channel, float
+            iot.valueVar[0] = (int)atof(c_val);
+            HC_setPWMChannel(iot, 0);
+            HC_publishValueMessage(iot,0);
+            Serial.print("Value channel: "); Serial.print(iot.subscribeMessages[index]);
+            Serial.print(" Value: "); Serial.println(iot.valueVar[index]);
+        break;
+        }
+      return ("OK"); // vallid message 
+  }
+  return("NAM"); // not a valid message
+}
+
+void HC_subscribeAll(iotdevice iot){
+  for (int i = 0; i < iot.numSubscribeMessages; i++){
+    #ifdef DEBUG
+      Serial.print("Subscribe to: "); Serial.println(iot.subscribeMessages[i]);
+    #endif
+      subscribeStr = iot.subscribeMessages[i];
+      subscribeStr.toCharArray(subscribe_buffer,subscribeStr.length()+1);
+      client.subscribe(subscribe_buffer);
+  }
 }
 
 void HC_publishInitialState(iotdevice iot, PubSubClient pclient){
