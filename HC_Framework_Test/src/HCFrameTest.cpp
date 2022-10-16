@@ -1,6 +1,7 @@
 #define DEBUG
 
 #include <Arduino.h>
+#include <ArduinoOTA.h>
 #include <HC_Frame.h>
 
 iotdevice myDevice;
@@ -44,24 +45,65 @@ void defineDevice(){
   myDevice.publishValueMessages[1] = myDevice.type+myDevice.freeName+"/stateBrightness2";
   myDevice.numValueMessages = 2;
 
-myDevice.channels[0].ChannelType = 0;
-myDevice.channels[0].GPIO = 2;
-myDevice.channels[0].PWM = 2;
+
+myDevice.channels[0].name = "LampLeft";
+myDevice.channels[0].ChannelType = SWITCHCH;
+myDevice.channels[0].Direction = OUTPUT;
+myDevice.channels[0].GPIO = 2; // no. of HW pin
+myDevice.channels[0].isInverted = 1;
+myDevice.channels[0].PWM = 2;  // no. of HW PWM pin
+myDevice.channels[0].isPWMChannel = 1; // it is a HW PWM channels
+myDevice.channels[0].PWMFrequency = 5000;
+myDevice.channels[0].PWMResolution = 10;
 myDevice.channels[0].StatusMessage = myDevice.type+myDevice.freeName+"/stateSwitch1";
 myDevice.channels[0].subscribeMessage = myDevice.type+myDevice.freeName+"/Switch1";
+
+myDevice.numChannels = 4;
 }
 
-// define channel
-typedef struct {
-  String subscribeMessage;
-  String StatusMessage;
-  int ChannelType; // for now: 0 = switch channel on or off, 1 = value channel, to transfer a float value
-  int GPIO;
-  int PWM;
-  int State;
-  int Value;
-} ch;
+int otaRunning = 0;
 
+void setupOTA(){
+
+  ArduinoOTA.setPort(8266);
+  
+  ArduinoOTA.onStart([]() {
+    digitalWrite(15, HIGH);
+    otaRunning = 1;
+    String type;
+    if (ArduinoOTA.getCommand() == U_FLASH) {
+      type = "sketch";
+    } else { // U_FS
+      type = "filesystem";
+    }
+    // NOTE: if updating FS this would be the place to unmount FS using FS.end()
+    Serial.println("Start updating " + type);
+  });
+  ArduinoOTA.onEnd([]() {
+    digitalWrite(15,LOW);
+    Serial.println("\nEnd");
+    otaRunning = 0;
+  });
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+  });
+  ArduinoOTA.onError([](ota_error_t error) {
+    Serial.printf("Error[%u]: ", error);
+    if (error == OTA_AUTH_ERROR) {
+      Serial.println("Auth Failed");
+    } else if (error == OTA_BEGIN_ERROR) {
+      Serial.println("Begin Failed");
+    } else if (error == OTA_CONNECT_ERROR) {
+      Serial.println("Connect Failed");
+    } else if (error == OTA_RECEIVE_ERROR) {
+      Serial.println("Receive Failed");
+    } else if (error == OTA_END_ERROR) {
+      Serial.println("End Failed");
+    }
+  });
+  ArduinoOTA.begin();
+
+}
 
 void reconnect() {
   int mqtt_reconnectcnt = 0;
@@ -192,8 +234,9 @@ void loop() {
   }
   client.loop();
 
-  unsigned long currentMillis = millis();
+  ArduinoOTA.handle();
 
+  unsigned long currentMillis = millis();
   if (currentMillis - previousMillis >= interval) {
     previousMillis = currentMillis;
   

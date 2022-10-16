@@ -5,6 +5,9 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 
+#define SWITCHCH 0
+#define VALUECH 1
+
 String publishStr;
 String subscribeStr;
 String compareStr;
@@ -21,19 +24,27 @@ char subscribe_buffer[MSG_BUFFER_SIZE+5];
 char compare_buffer[MSG_BUFFER_SIZE+5];
 // -----------------------------------------------------------------------------------------
 typedef struct {
+  String name;
   String subscribeMessage;
   String StatusMessage;
-  int ChannelType; // for now: 0 = switch channel on or off, 1 = value channel, to transfer a float value
-  int GPIO;
-  int PWM;
-  int StateVar;
-  int ValueVar
-
+  int ChannelType;    // for now: 0 = switch channel on or off, 1 = value channel, to transfer a float value
+  int Direction;      // INPUT or OUTPUT
+  int GPIO;           // HW pin number
+  int isInverted;     // 1 means always channel on, so for low swiching channels
+  int PWM;            // HW GPIO pin or PWM channel (ESP32) 
+  int isPWMChannel;   // 1 if it is PWM, 0 if it is another value channel, e.d. DAC
+  int PWMChannel;     // HW PMW generator channel, valid for ESP32 only
+  int PWMFrequency;   // PWM frequency for PWM generator, valid for ESP32 only
+  int PWMResolution;  // resolution for PWM generator, valid for ESP32 only
+  int State;          // switch state 
+  float Value;          // value of the channel, e.g. PWM value
 } ch;
 // -----------------------------------------------------------------------------------------
 typedef struct {
+
   ch channels[4];
-  
+  int numChannels;
+
   String    chipID;
   String    systemID;
   String    type; //device type
@@ -64,6 +75,36 @@ typedef struct {
   IPAddress deviceIP;
 } iotdevice;
 
+
+void initChannels(iotdevice iot){
+/*
+typedef struct {
+  String name;
+  String subscribeMessage;
+  String StatusMessage;
+  int ChannelType; // for now: 0 = switch channel on or off, 1 = value channel, to transfer a float value
+  int Direction;   // INPUT or OUTPUT
+  int GPIO;        // HW pin number
+  int PWM;         // HW PWM pin or channel (ESP32) number
+  int State;       // switch state 
+  int Value;       // value of the channel, e.g. PWM value
+} ch;
+*/
+
+  for (int i = 0; i < iot.numChannels; i++){
+    // for ESP8266 no special init for a PWM channel is needed, just define it as output
+    pinMode(iot.channels[i].GPIO, iot.channels[i].Direction);
+    // for ESP32 we need a special init, select HW PWM channel and GPIO pin, frequency and duty
+    #ifdef ESP32 // def from arduino enviroment
+      if (iot.channels[i].isPWMChannel){
+        // setup ESP32 PWM control
+        ledcAttachPin(iot.channels[i].PWM , iot.channels[i].PWMHWChannel; // set HW PWM channel for each GPIO pin
+        ledcSetup(iot.channels[i].PWMHWChannel, iot.channels[i].PWMFrequency, iot.channels[i].PWMResolution);
+      }
+    #endif
+
+  }
+}
 
 void HC_initallGPIOOut(iotdevice iot){
   int i;
@@ -138,8 +179,68 @@ void HC_publishValueMessage(iotdevice iot, int index){
       client.publish(publish_buffer,msg);
 }
 
-const int SWITCHCH = 0;
-const int VALUECH = 1;
+//--------------------------------------------------------------------------------------------------------
+void ChannelPublishMessage(iotdevice iot, int index){
+    publishStr = iot.channels[index].StatusMessage;
+    switch (iot.channels[index].ChannelType){
+      case 0:
+        snprintf (msg, MSG_BUFFER_SIZE, "%d", iot.channels[index].State); // copy payload value into msg buffer
+      break;
+      case 1:
+        snprintf (msg, MSG_BUFFER_SIZE, "%f", iot.channels[index].Value); // copy payload value into msg buffer
+      break;
+    }
+    publishStr.toCharArray(publish_buffer,publishStr.length()+1);
+    client.publish(publish_buffer,msg);
+  }
+//--------------------------------------------------------------------------------------------------------
+void ChannelSet(iotdevice iot, int index){
+switch (iot.channels[index].ChannelType){
+      case 0:
+        if (iot.channels[index].isInverted){
+          digitalWrite(iot.GPIO[index], !iot.channels[index].State);
+        } else {
+          digitalWrite(iot.GPIO[index], iot.channels[index].State);
+        }  
+      break;
+      case 1:
+        if (iot.channels[index].isPWMChannel == 1){
+          #ifdef ESP32
+            ledcWrite(iot.PWMChannel[index], iot.valueVar[index]);
+          #endif
+          analogWrite(iot.PWM[index], iot.valueVar[index]); //this will work for ESP8266 only !
+        }
+      break;
+    }
+}  
+//--------------------------------------------------------------------------------------------------------
+String new_HC_activateChannelbyMessage(iotdevice iot,int index, char* topic, unsigned int len, byte* payl){
+  String retStr;
+
+  iot.channels[index].subscribeMessage.toCharArray(compare_buffer,iot.channels[index].subscribeMessage.length()+1);  
+  if (strcmp(topic, compare_buffer) == 0){
+      for (unsigned int i=0;i < len;i++){
+        c_val[i]=(char)(payl[i]);   
+      }
+      switch (iot.channels[index].ChannelType){
+        case 0: // switch channel, only 0 and 1, on and off
+            iot.channels[index].State= atoi(c_val);
+            ChannelSet(iot, index);
+            ChannelPublishMessage(iot, index);
+        break;
+        case 1: // value channel, float
+            iot.channels[index].Value = (int)atof(c_val);
+            ChannelSet(iot, index);
+            ChannelPublishMessage(iot, index);
+            Serial.print("Value channel: "); Serial.print(iot.subscribeMessages[index]);
+            Serial.print(" Value: "); Serial.println(iot.valueVar[index]);
+        break;
+        }
+      return ("OK"); // vallid message 
+  }
+  return("NAM"); // not a valid message
+}
+//------------------------------------------------------------------------------------------------------------------
 
 String HC_activateChannelbyMessage(iotdevice iot,int index, int chType, char* topic, unsigned int len, byte* payl){
   String retStr;
