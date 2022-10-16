@@ -25,6 +25,12 @@ void defineDevice(){
   // define switch and dim channels --------------------------------
   myDevice.numSwitchChannels = 2;
   myDevice.numPWMChannels = 2;
+  myDevice.GPIO[0] = 1;
+  myDevice.GPIO[1] = 2;
+  myDevice.numGPIO = 2;
+  myDevice.PWM[0] = 20;
+  myDevice.PWM[1] = 22;
+  myDevice.numPWM = 2;
   // define the messages the device is subscribing to to control it ----
   myDevice.numSubscribeMessages = 4;
   myDevice.subscribeMessages[0] = myDevice.type+myDevice.freeName+"/Switch1";
@@ -58,7 +64,7 @@ void reconnect() {
       delay(2000); // Wait 2 seconds before retrying
       mqtt_reconnectcnt ++;
       #ifdef DEBUG
-        Serial.print("Recon cnt: "); Serial.println(mqtt_reconnectcnt);
+        Serial.print("Reconnect cnt: "); Serial.println(mqtt_reconnectcnt);
       #endif
       if (mqtt_reconnectcnt > 10){     
        ESP.restart();
@@ -93,37 +99,45 @@ void HC_callback(char* topic, byte* payload, unsigned int length) {
 
   for (unsigned int i=0;i<6;i++) c_val[i]=0; // clear buffer
 
-  retStr = checkSubscribeMessage(myDevice,0,topic,length, payload);
+  retStr = HC_checkSubscribeMessage(myDevice,0,topic,length, payload);
   if (retStr != "NAM"){ // it is a valid message content
     // value conversion takes place here
    myDevice.stateVar[0] = retStr.toInt();
-   publishStateMessage(myDevice,0);
+   HC_publishStateMessage(myDevice,0);
   }
-  Serial.print("Callback return String 1: "); Serial.println(retStr);
 
-  retStr = checkSubscribeMessage(myDevice,1,topic,length, payload);
+  #ifdef DEBUG
+    Serial.print("Callback return String 1: "); Serial.println(retStr);
+  #endif
+  retStr = HC_checkSubscribeMessage(myDevice,1,topic,length, payload);
   if (retStr != "NAM"){ // it is a valid message content
     // value conversion takes place here
     myDevice.stateVar[1] = retStr.toInt();
-    publishStateMessage(myDevice,1);
+    HC_publishStateMessage(myDevice,1);
   }  
-  Serial.print("Callback return String 2: "); Serial.println(retStr);
+  #ifdef DEBUG
+    Serial.print("Callback return String 2: "); Serial.println(retStr);
+  #endif
 
-  retStr = checkSubscribeMessage(myDevice,2,topic,length, payload);
+  retStr = HC_checkSubscribeMessage(myDevice,2,topic,length, payload);
   if (retStr != "NAM"){ // it is a valid message content
     // value conversion takes place here
     myDevice.valueVar[0] = retStr.toFloat();
-    publishValueMessage(myDevice,0);
+    HC_publishValueMessage(myDevice,0);
   }  
-  Serial.print("Callback return String 3: "); Serial.println(retStr);
+  #ifdef DEBUG
+    Serial.print("Callback return String 3: "); Serial.println(retStr);
+  #endif
 
-  retStr = checkSubscribeMessage(myDevice,3,topic,length, payload);
+  retStr = HC_checkSubscribeMessage(myDevice,3,topic,length, payload);
   if (retStr != "NAM"){ // it is a valid message content
     // value conversion takes place here
     myDevice.valueVar[1] = retStr.toFloat();
-    publishValueMessage(myDevice,1);
+    HC_publishValueMessage(myDevice,1);
   }  
-  Serial.print("Callback return String 4: "); Serial.println(retStr);
+  #ifdef DEBUG
+    Serial.print("Callback return String 4: "); Serial.println(retStr);
+  #endif  
 }  
 
 void setup() {
@@ -137,7 +151,6 @@ void setup() {
 
   client.setServer(mqtt_server, 1883);
   client.setCallback(HC_callback);
-
 }
 
 unsigned long previousMillis = 0;
