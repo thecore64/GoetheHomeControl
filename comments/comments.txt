@@ -1,4 +1,5 @@
 14/10/2022 hosting the whole project on GitHub
+18/10/2022 cloned on MacBook 16"
 
 FRAMEWORK FOR DEFINING HOME CONTROL DEVICES
 ===========================================
